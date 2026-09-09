@@ -161,7 +161,7 @@ function calculateOffset() {
     
     // Update donation link with USD value
     const baseUrl = "https://donate.tiltify.com/@bbech/the-marco-offset";
-    document.getElementById("donationLink").href = baseUrl + "?amount=" + result.offsetUSD.toFixed(2);
+    document.getElementById("donationLink").href = MarcoOffset.donationUrl(baseUrl, result.offsetUSD);
     
     hasCalculated = true;
 }

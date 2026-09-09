@@ -65,8 +65,17 @@
         };
     }
 
+    // Tiltify's donate page prefills its amount field from an `amount` query
+    // parameter (undocumented, but confirmed working). A zero offset is left
+    // off entirely rather than handing someone a prefilled 0.00.
+    function donationUrl(baseUrl, offsetUSD) {
+        const donation = amount(offsetUSD);
+        return donation > 0 ? baseUrl + '?amount=' + donation.toFixed(2) : baseUrl;
+    }
+
     return {
         MONTHS_PER_YEAR: MONTHS_PER_YEAR,
+        donationUrl: donationUrl,
         sumBasePrices: sumBasePrices,
         annualFromMonthly: annualFromMonthly,
         computeOffset: computeOffset

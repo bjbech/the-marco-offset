@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
     sumBasePrices,
     annualFromMonthly,
+    donationUrl,
     computeOffset
 } = require('../assets/js/calculator.js');
 
@@ -124,4 +125,25 @@ test('negative entries are clamped to zero rather than reducing the donation', (
 
 test('an unrecognized level falls back to the base offset', () => {
     assert.equal(computeOffset(inputs({ level: 99, monthlyAiCost: 20 })).aiCost, 0);
+});
+
+const DONATE_URL = 'https://donate.tiltify.com/@bbech/the-marco-offset';
+
+test('donationUrl appends the offset as an amount parameter', () => {
+    assert.equal(donationUrl(DONATE_URL, 321), `${DONATE_URL}?amount=321.00`);
+    assert.equal(donationUrl(DONATE_URL, 237.5), `${DONATE_URL}?amount=237.50`);
+    assert.equal(donationUrl(DONATE_URL, 1234.567), `${DONATE_URL}?amount=1234.57`);
+});
+
+test('donationUrl omits the parameter when there is nothing to donate', () => {
+    // Prefilling 0.00 would be worse than leaving the field for them to fill.
+    assert.equal(donationUrl(DONATE_URL, 0), DONATE_URL);
+    assert.equal(donationUrl(DONATE_URL, -50), DONATE_URL);
+    assert.equal(donationUrl(DONATE_URL, ''), DONATE_URL);
+    assert.equal(donationUrl(DONATE_URL, undefined), DONATE_URL);
+});
+
+test('donationUrl matches what computeOffset produces end to end', () => {
+    const result = computeOffset(inputs({ level: 2, monthlyAiCost: 20 }));
+    assert.equal(donationUrl(DONATE_URL, result.offsetUSD), `${DONATE_URL}?amount=221.00`);
 });
