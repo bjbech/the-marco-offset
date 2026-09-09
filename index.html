@@ -23,6 +23,9 @@
             text-align: right;
             font-weight: 600;
         }
+        [hidden] {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -39,6 +42,14 @@
             <li>Taxes</li>
             <li>Shipping costs</li>
         </ul>
+
+        <p>As of <a href="https://atp.fm/707">ATP 707</a>, the offset has three levels. Pick whichever one you can swing:</p>
+
+        <ul>
+            <li><strong>Level 1 &mdash; Base Offset:</strong> everything you spent above base price. The original Marco Offset, unchanged.</li>
+            <li><strong>Level 2:</strong> Level 1 plus whatever you spent on AI this month.</li>
+            <li><strong>Level 3:</strong> Level 1 plus whatever you spent on AI this year.</li>
+        </ul>
         
         <p>To help with this process, enter the quantities of devices purchased and your total purchase information below.</p>
 
@@ -48,6 +59,13 @@
             <option value="Canada">Canada</option>
             <option value="United Kingdom">United Kingdom</option>
             <option value="Italy">Italy</option>
+        </select>
+
+        <label for="offsetLevel">Offset Level:</label>
+        <select id="offsetLevel">
+            <option value="1">Level 1 &mdash; Base Offset</option>
+            <option value="2">Level 2 &mdash; Base Offset + AI cost this month</option>
+            <option value="3">Level 3 &mdash; Base Offset + AI cost this year</option>
         </select>
 
         <table>
@@ -65,7 +83,7 @@
             <tfoot>
                 <tr class="total-row">
                     <td colspan="3">Total Base Price:</td>
-                    <td class="device-total"><span id="currencySymbol">$</span><span id="totalBasePrice">0.00</span></td>
+                    <td class="device-total"><span class="currency-symbol">$</span><span id="totalBasePrice">0.00</span></td>
                 </tr>
             </tfoot>
         </table>
@@ -73,14 +91,26 @@
         <hr>
 
         <label for="purchaseTotal">Total Purchase Amount (including upgrades, accessories, taxes):</label>
-        <input type="number" id="purchaseTotal" step="0.01" placeholder="0.00"><br>
+        <input type="number" id="purchaseTotal" step="0.01" min="0" placeholder="0.00"><br>
         
         <label for="monthlyAppleCare">Monthly AppleCare Total:</label>
-        <input type="number" id="monthlyAppleCare" step="0.01" placeholder="0.00"><br>
+        <input type="number" id="monthlyAppleCare" step="0.01" min="0" placeholder="0.00"><br>
+
+        <div id="monthlyAiGroup" hidden>
+            <label for="monthlyAiCost">Monthly AI Cost (<span class="currency-symbol">$</span>):</label>
+            <input type="number" id="monthlyAiCost" step="0.01" min="0" placeholder="0.00">
+            <small>What you spent on AI subscriptions and usage this month.</small>
+        </div>
+
+        <div id="annualAiGroup" hidden>
+            <label for="annualAiCost">Annual AI Cost (<span class="currency-symbol">$</span>):</label>
+            <input type="number" id="annualAiCost" step="0.01" min="0" placeholder="0.00">
+            <small>Auto-filled as monthly &times; 12. Edit it to enter your real annual spend &mdash; clear the field to resume auto-filling.</small>
+        </div>
 
         <button onclick="calculateOffset()">Calculate Marco Offset</button>
         
-        <p class="total-row">Minimum Donation: $<span id="offsetAmountUSD">0.00</span> <span id="localCurrencyDisplay"></span></p>
+        <p class="total-row">Minimum Donation<span id="offsetLevelLabel"></span>: $<span id="offsetAmountUSD">0.00</span> <span id="localCurrencyDisplay"></span></p>
 
         <p>I have established a <a id="donationLink" href="https://donate.tiltify.com/@bbech/the-marco-offset">sub-campaign</a> designed to make tracking the funds raised for 'The Marco Offset' donation more enjoyable.</p>
 
@@ -92,6 +122,7 @@
             </small>
         </footer>
     </main>
+    <script src="assets/js/calculator.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>
