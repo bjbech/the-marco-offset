@@ -24,8 +24,8 @@ As of [ATP 707](https://atp.fm/707), the offset has three levels. Pick whichever
 | Level | Formula |
 | --- | --- |
 | **1 — Base Offset** | `total purchase − base price` (the original offset, unchanged) |
-| **2** | Level 1 `+` what you spent on AI this month |
-| **3** | Level 1 `+` what you spent on AI this year |
+| **2 — Base + Monthly AI**| Level 1 `+` what you spent on AI this month |
+| **3 — Base + Yearly AI**| Level 1 `+` what you spent on AI this year |
 
 Two rules apply throughout:
 
