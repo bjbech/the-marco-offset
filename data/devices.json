@@ -3,52 +3,44 @@
     "currency": "USD",
     "symbol": "$",
     "devices": {
-      "iPhone Air": 999,
-      "iPhone 17": 799,
-      "iPhone 17 Pro": 1099,
-      "Apple Watch Series 11": 399,
-      "Apple Watch SE 3": 249,
-      "Apple Watch Ultra 3": 799,
-      "AirPods Pro 3": 249
+      "iPhone 18 Pro": 1199,
+      "iPhone Duo": 1999,
+      "Apple Watch 12": 399,
+      "Apple Watch Ultra 4": 799,
+      "AirPods 5": 129
     }
   },
   "Canada": {
     "currency": "CAD",
     "symbol": "C$",
     "devices": {
-      "iPhone Air": 1499,
-      "iPhone 17": 1129,
-      "iPhone 17 Pro": 1599,
-      "Apple Watch Series 11": 549,
-      "Apple Watch SE 3": 329,
-      "Apple Watch Ultra 3": 1099,
-      "AirPods Pro 3": 329
+      "iPhone 18 Pro": 1749,
+      "iPhone Duo": 2999,
+      "Apple Watch 12": 549,
+      "Apple Watch Ultra 4": 1099,
+      "AirPods 5": 179
     }
   },
   "United Kingdom": {
     "currency": "GBP",
     "symbol": "£",
     "devices": {
-      "iPhone Air": 999,
-      "iPhone 17": 799,
-      "iPhone 17 Pro": 1099,
-      "Apple Watch Series 11": 369,
-      "Apple Watch SE 3": 219,
-      "Apple Watch Ultra 3": 749,
-      "AirPods Pro 3": 219
+      "iPhone 18 Pro": 1199,
+      "iPhone Duo": 1999,
+      "Apple Watch 12": 369,
+      "Apple Watch Ultra 4": 749,
+      "AirPods 5": 119
     }
   },
   "Italy": {
     "currency": "EUR",
     "symbol": "€",
     "devices": {
-      "iPhone Air": 1239,
-      "iPhone 17": 979,
-      "iPhone 17 Pro": 1339,
-      "Apple Watch Series 11": 459,
-      "Apple Watch SE 3": 279,
-      "Apple Watch Ultra 3": 909,
-      "AirPods Pro 3": 249
+      "iPhone 18 Pro": 1489,
+      "iPhone Duo": 2369,
+      "Apple Watch 12": 459,
+      "Apple Watch Ultra 4": 909,
+      "AirPods 5": 149
     }
   }
 }

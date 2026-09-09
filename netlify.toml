@@ -1,0 +1,9 @@
+# Build settings live here rather than in the Netlify dashboard so a broken
+# offset formula fails the build instead of shipping. `node --test` needs no
+# install: the runner is built into Node.
+[build]
+  command = "node --test"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "24"

@@ -1,6 +1,16 @@
 let deviceData = {};
 let conversionRates = {};
 let currentCountry = 'USA';
+let currentLevel = 1;
+
+// The annual AI field tracks monthly x 12 until the visitor types their own
+// figure, which covers subscriptions plus metered usage, annual plans, and
+// anyone who started partway through the year.
+let annualAiOverridden = false;
+
+// Results refresh on input only after the button has produced one, so the page
+// stays quiet until the visitor asks for a number.
+let hasCalculated = false;
 
 async function loadData() {
     try {
@@ -16,7 +26,39 @@ async function loadData() {
         updateCurrency();
     } catch (error) {
         console.error('Error loading data:', error);
+        showDataError();
     }
+}
+
+// An empty device table looks like a broken page with no explanation, so say
+// what failed. Opening index.html straight from disk is the usual cause:
+// browsers block fetch() of local files from a file:// origin.
+function showDataError() {
+    const servedFromDisk = window.location.protocol === 'file:';
+    const advice = servedFromDisk
+        ? 'This page is open from a <code>file://</code> URL, which blocks it from reading <code>data/devices.json</code>. Serve the folder over HTTP instead &mdash; for example <code>python3 -m http.server</code> &mdash; and open <code>http://localhost:8000</code>.'
+        : 'Check your connection and reload the page.';
+
+    document.getElementById('deviceTableBody').innerHTML =
+        `<tr><td colspan="4">Could not load the device list. ${advice}</td></tr>`;
+}
+
+function currentDevices() {
+    const countryData = deviceData[currentCountry];
+    return countryData ? countryData.devices : {};
+}
+
+function inputIdFor(deviceName) {
+    return deviceName.replace(/\s+/g, '_');
+}
+
+function readQuantities() {
+    const quantities = {};
+    Object.keys(currentDevices()).forEach(function (deviceName) {
+        const field = document.getElementById(inputIdFor(deviceName));
+        quantities[deviceName] = field ? field.value : 0;
+    });
+    return quantities;
 }
 
 function initializeTable() {
@@ -32,8 +74,8 @@ function initializeTable() {
         row.innerHTML = `
             <td>${deviceName}</td>
             <td class="device-price">${countryData.symbol}${price.toFixed(2)}</td>
-            <td><input type="number" class="quantity-input" id="${deviceName.replace(/\s+/g, '_')}" min="0" value="0" onchange="updateTotals()"></td>
-            <td class="device-total">${countryData.symbol}<span id="${deviceName.replace(/\s+/g, '_')}_total">0.00</span></td>
+            <td><input type="number" class="quantity-input" id="${inputIdFor(deviceName)}" min="0" value="0" onchange="updateTotals()"></td>
+            <td class="device-total">${countryData.symbol}<span id="${inputIdFor(deviceName)}_total">0.00</span></td>
         `;
         tableBody.appendChild(row);
     });
@@ -43,67 +85,75 @@ function updateCurrency() {
     const countryData = deviceData[currentCountry];
     if (!countryData) return;
     
-    document.getElementById('currencySymbol').textContent = countryData.symbol;
+    document.querySelectorAll('.currency-symbol').forEach(function (element) {
+        element.textContent = countryData.symbol;
+    });
 }
 
 function updateTotals() {
-    const countryData = deviceData[currentCountry];
-    if (!countryData) return;
+    const devices = currentDevices();
+    const quantities = readQuantities();
     
-    let totalBase = 0;
-    
-    Object.entries(countryData.devices).forEach(([deviceName, price]) => {
-        const inputId = deviceName.replace(/\s+/g, '_');
-        const quantity = parseInt(document.getElementById(inputId)?.value || 0);
-        const subtotal = quantity * price;
-        
-        const subtotalElement = document.getElementById(`${inputId}_total`);
+    Object.entries(devices).forEach(function ([deviceName, price]) {
+        const subtotalElement = document.getElementById(`${inputIdFor(deviceName)}_total`);
         if (subtotalElement) {
+            const subtotal = MarcoOffset.sumBasePrices({ [deviceName]: price }, quantities);
             subtotalElement.textContent = subtotal.toFixed(2);
         }
-        
-        totalBase += subtotal;
     });
     
-    document.getElementById('totalBasePrice').textContent = totalBase.toFixed(2);
+    document.getElementById('totalBasePrice').textContent =
+        MarcoOffset.sumBasePrices(devices, quantities).toFixed(2);
+    
+    refreshResult();
+}
+
+// Level 1 asks for no AI spend at all; level 2 asks only for the month, so the
+// annual field never appears alongside it.
+function updateLevelFields() {
+    document.getElementById('monthlyAiGroup').hidden = currentLevel === 1;
+    document.getElementById('annualAiGroup').hidden = currentLevel !== 3;
+}
+
+function syncAnnualAi() {
+    if (annualAiOverridden) return;
+    
+    const monthly = document.getElementById('monthlyAiCost').value;
+    document.getElementById('annualAiCost').value =
+        monthly === '' ? '' : MarcoOffset.annualFromMonthly(monthly).toFixed(2);
+}
+
+function refreshResult() {
+    if (hasCalculated) calculateOffset();
 }
 
 function calculateOffset() {
     const countryData = deviceData[currentCountry];
     if (!countryData) return;
     
-    let totalBase = 0;
-    
-    Object.entries(countryData.devices).forEach(([deviceName, price]) => {
-        const inputId = deviceName.replace(/\s+/g, '_');
-        const quantity = parseInt(document.getElementById(inputId)?.value || 0);
-        totalBase += quantity * price;
+    const result = MarcoOffset.computeOffset({
+        level: currentLevel,
+        totalBase: MarcoOffset.sumBasePrices(countryData.devices, readQuantities()),
+        purchaseTotal: document.getElementById('purchaseTotal').value,
+        monthlyAppleCare: document.getElementById('monthlyAppleCare').value,
+        monthlyAiCost: document.getElementById('monthlyAiCost').value,
+        annualAiCost: document.getElementById('annualAiCost').value,
+        conversionRate: conversionRates[currentCountry]
     });
-    
-    const purchaseTotal = parseFloat(document.getElementById('purchaseTotal').value) || 0;
-    const monthlyAppleCare = parseFloat(document.getElementById('monthlyAppleCare').value) || 0;
-    
-    const totalPurchase = purchaseTotal + (monthlyAppleCare * 12);
-    let offset = totalPurchase - totalBase;
-    
-    offset = offset < 0 ? 0 : offset;
     
     const formatter = new Intl.NumberFormat('en-US', { 
         minimumFractionDigits: 2, 
         maximumFractionDigits: 2 
     });
     
-    // Calculate USD value for donation
-    const conversionRate = conversionRates[currentCountry] || 1;
-    const offsetUSD = offset * conversionRate;
-    
     // Update display
-    document.getElementById('offsetAmountUSD').textContent = formatter.format(offsetUSD);
+    document.getElementById('offsetLevelLabel').textContent = ` (Level ${currentLevel})`;
+    document.getElementById('offsetAmountUSD').textContent = formatter.format(result.offsetUSD);
     
     // Show local currency in parentheses if not USA
     const localCurrencyDisplay = document.getElementById('localCurrencyDisplay');
     if (currentCountry !== 'USA') {
-        localCurrencyDisplay.textContent = `(${countryData.symbol}${formatter.format(offset)})`;
+        localCurrencyDisplay.textContent = `(${countryData.symbol}${formatter.format(result.offsetLocal)})`;
         localCurrencyDisplay.style.fontWeight = 'normal';
     } else {
         localCurrencyDisplay.textContent = '';
@@ -111,20 +161,45 @@ function calculateOffset() {
     
     // Update donation link with USD value
     const baseUrl = "https://donate.tiltify.com/@bbech/the-marco-offset";
-    const updatedUrl = baseUrl + "?amount=" + offsetUSD.toFixed(2);
-    document.getElementById("donationLink").href = updatedUrl;
+    document.getElementById("donationLink").href = MarcoOffset.donationUrl(baseUrl, result.offsetUSD);
+    
+    hasCalculated = true;
 }
 
-// Event listener for country change
 document.addEventListener('DOMContentLoaded', function() {
-    const countrySelect = document.getElementById('country');
-    countrySelect.addEventListener('change', function() {
+    // Browsers restore form values on refresh, so read the controls rather than
+    // assuming they still sit at their default options.
+    currentCountry = document.getElementById('country').value;
+    currentLevel = Number(document.getElementById('offsetLevel').value);
+
+    document.getElementById('country').addEventListener('change', function() {
         currentCountry = this.value;
         initializeTable();
         updateCurrency();
         updateTotals();
     });
     
-    // Load data on page load
+    document.getElementById('offsetLevel').addEventListener('change', function() {
+        currentLevel = Number(this.value);
+        updateLevelFields();
+        refreshResult();
+    });
+    
+    document.getElementById('monthlyAiCost').addEventListener('input', function() {
+        syncAnnualAi();
+        refreshResult();
+    });
+    
+    // Clearing the annual field hands control back to the monthly extrapolation.
+    document.getElementById('annualAiCost').addEventListener('input', function() {
+        annualAiOverridden = this.value !== '';
+        if (!annualAiOverridden) syncAnnualAi();
+        refreshResult();
+    });
+    
+    document.getElementById('purchaseTotal').addEventListener('input', refreshResult);
+    document.getElementById('monthlyAppleCare').addEventListener('input', refreshResult);
+    
+    updateLevelFields();
     loadData();
 });
