@@ -7,7 +7,7 @@ This is the repository for the website [TheMarcoOffset](https://themarcooffset.c
 The Marco Offset is a way to calculate your minimum donation to Relay for the St. Jude fundraiser based on a method devised by [Marco Arment](marco.org) on the [Accidental Tech Podcast](atp.fm). 
 
 To calculate:
-1. Subtract the base model price of an iPhone or iPhone Pro from your total purchase price.
+1. Subtract the base model price of the Apple devices you are purchasing from your total purchase price.
 2. The difference is your minimum donation.
 
 ### Include in your total purchase price:
