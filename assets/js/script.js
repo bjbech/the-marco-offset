@@ -127,6 +127,48 @@ function refreshResult() {
     if (hasCalculated) calculateOffset();
 }
 
+const CURRENCY_FIELDS = ['purchaseTotal', 'monthlyAppleCare', 'monthlyAiCost', 'annualAiCost'];
+
+// Text already written as a plain number is left exactly as typed, so "240.00"
+// does not get rewritten to "240" under someone's cursor.
+const PLAIN_NUMBER = /^-?\d*\.?\d*$/;
+
+function setFieldError(field, message) {
+    const error = document.getElementById(`${field.id}Error`);
+    if (error) {
+        error.textContent = message;
+        error.hidden = !message;
+    }
+
+    if (message) {
+        field.setAttribute('aria-invalid', 'true');
+    } else {
+        field.removeAttribute('aria-invalid');
+    }
+}
+
+// Rewrites a pasted value to the number the calculator actually read, so a
+// misinterpreted separator is visible before anyone donates on the strength
+// of it. Text that is not a number at all says so instead of counting as 0.
+function normalizeField(field) {
+    const raw = field.value.trim();
+
+    if (raw === '' || PLAIN_NUMBER.test(raw)) {
+        setFieldError(field, '');
+        return;
+    }
+
+    const parsed = MarcoOffset.parseAmount(raw);
+    if (Number.isNaN(parsed)) {
+        setFieldError(field, `"${raw}" is not a number the calculator can read.`);
+        return;
+    }
+
+    field.value = String(parsed);
+    setFieldError(field, '');
+    refreshResult();
+}
+
 function calculateOffset() {
     const countryData = deviceData[currentCountry];
     if (!countryData) return;
@@ -199,6 +241,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('purchaseTotal').addEventListener('input', refreshResult);
     document.getElementById('monthlyAppleCare').addEventListener('input', refreshResult);
+
+    // Normalize on the way out rather than mid-keystroke, and drop a stale
+    // error as soon as someone starts correcting the field.
+    CURRENCY_FIELDS.forEach(function (id) {
+        const field = document.getElementById(id);
+        field.addEventListener('blur', function () { normalizeField(this); });
+        field.addEventListener('input', function () { setFieldError(this, ''); });
+    });
     
     updateLevelFields();
     loadData();

@@ -26,6 +26,9 @@
         [hidden] {
             display: none !important;
         }
+        .input-error {
+            color: var(--del-color, #d32f2f);
+        }
     </style>
 </head>
 <body>
@@ -91,20 +94,24 @@
         <hr>
 
         <label for="purchaseTotal">Total Purchase Amount (including upgrades, accessories, taxes):</label>
-        <input type="number" id="purchaseTotal" step="0.01" min="0" placeholder="0.00"><br>
+        <input type="text" inputmode="decimal" id="purchaseTotal" placeholder="0.00">
+        <small class="input-error" id="purchaseTotalError" hidden></small><br>
         
         <label for="monthlyAppleCare">Monthly AppleCare Total:</label>
-        <input type="number" id="monthlyAppleCare" step="0.01" min="0" placeholder="0.00"><br>
+        <input type="text" inputmode="decimal" id="monthlyAppleCare" placeholder="0.00">
+        <small class="input-error" id="monthlyAppleCareError" hidden></small><br>
 
         <div id="monthlyAiGroup" hidden>
             <label for="monthlyAiCost">Monthly AI Cost (<span class="currency-symbol">$</span>):</label>
-            <input type="number" id="monthlyAiCost" step="0.01" min="0" placeholder="0.00">
+            <input type="text" inputmode="decimal" id="monthlyAiCost" placeholder="0.00">
+            <small class="input-error" id="monthlyAiCostError" hidden></small>
             <small>What you spent on AI subscriptions and usage this month.</small>
         </div>
 
         <div id="annualAiGroup" hidden>
             <label for="annualAiCost">Annual AI Cost (<span class="currency-symbol">$</span>):</label>
-            <input type="number" id="annualAiCost" step="0.01" min="0" placeholder="0.00">
+            <input type="text" inputmode="decimal" id="annualAiCost" placeholder="0.00">
+            <small class="input-error" id="annualAiCostError" hidden></small>
             <small>Auto-filled as monthly &times; 12. Edit it to enter your real annual spend &mdash; clear the field to resume auto-filling.</small>
         </div>
 
