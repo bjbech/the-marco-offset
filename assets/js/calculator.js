@@ -129,6 +129,59 @@
         return donation > 0 ? baseUrl + '?amount=' + donation.toFixed(2) : baseUrl;
     }
 
+    // Frankfurter quotes the base against each target ("1 USD = 1.3887 CAD");
+    // conversionRate.json stores the inverse, local -> USD, keyed by the
+    // country names in devices.json.
+    const RATES_ENDPOINT = 'https://api.frankfurter.dev/v2/rates';
+    const RATES_BASE = 'USD';
+    const RATES_PROVIDER = 'ECB';
+
+    // Deriving the quote currencies from the device data means a new country
+    // only ever has to be added to devices.json.
+    function ratesUrl(devices) {
+        const quotes = [];
+
+        Object.keys(devices).forEach(function (country) {
+            const code = devices[country].currency;
+            if (code && quotes.indexOf(code) === -1) quotes.push(code);
+        });
+
+        return RATES_ENDPOINT +
+            '?base=' + RATES_BASE +
+            '&quotes=' + quotes.join(',') +
+            '&providers=' + RATES_PROVIDER;
+    }
+
+    // Returns null rather than a partial object: one missing currency would
+    // reach the offset arithmetic as undefined and blank out that country.
+    function ratesByCountry(payload, devices) {
+        if (!Array.isArray(payload) || payload.length === 0) return null;
+
+        // The base is worth 1 of itself whether or not the response says so.
+        const quoted = {};
+        quoted[RATES_BASE] = 1;
+
+        for (const entry of payload) {
+            if (!entry || entry.base !== RATES_BASE) return null;
+            if (typeof entry.quote !== 'string') return null;
+            if (!Number.isFinite(entry.rate) || entry.rate <= 0) return null;
+            quoted[entry.quote] = entry.rate;
+        }
+
+        const rates = {};
+
+        for (const country of Object.keys(devices)) {
+            const quote = quoted[devices[country].currency];
+            if (!Number.isFinite(quote) || quote <= 0) return null;
+            // Significant figures, not decimal places: six decimals is exact
+            // enough near 1.0 but loses 0.8% on a currency like IDR, where a
+            // unit is worth about 0.0000625 USD.
+            rates[country] = Number((1 / quote).toPrecision(8));
+        }
+
+        return rates;
+    }
+
     return {
         MONTHS_PER_YEAR: MONTHS_PER_YEAR,
         donationUrl: donationUrl,
@@ -136,6 +189,8 @@
         amount: amount,
         sumBasePrices: sumBasePrices,
         annualFromMonthly: annualFromMonthly,
-        computeOffset: computeOffset
+        computeOffset: computeOffset,
+        ratesUrl: ratesUrl,
+        ratesByCountry: ratesByCountry
     };
 });
