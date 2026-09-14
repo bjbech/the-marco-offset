@@ -6,7 +6,7 @@ The site is static — no build tooling to install. Serve it with
 
 ## Adding a country
 
-Four files are involved, and one ordering rule: **`data/conversionRate.json` is
+Three files are involved, and one ordering rule: **`data/conversionRate.json` is
 generated, not hand-edited.** Adding a country to `data/devices.json` makes the
 committed rate file incomplete, and `node --test` will fail until you regenerate
 it in step 4.
@@ -86,7 +86,7 @@ to edit here — but the file will not contain your new country until you run th
 node --test
 ```
 
-### 6. Commit all four files
+### 6. Commit all three files
 
 ```bash
 git add data/devices.json data/conversionRate.json index.html
