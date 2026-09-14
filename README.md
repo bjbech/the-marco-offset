@@ -78,6 +78,9 @@ described in [CONTRIBUTING.md](CONTRIBUTING.md).
 2. Create a new branch.
 3. Make your changes and submit a pull request.
 
+Adding a country or currency has a specific order to it — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Change Log
 2026-09-08: Added the three offset levels from ATP 707 (base, plus monthly AI cost, plus annual AI cost). Extracted the offset math into `assets/js/calculator.js` and covered it with `node --test`.  
 2025-09-10: Redesign of website to now make it a calculator of all products released in the September Apple event. Add the ability to select countries. To start added USA, Canada, UK, and Italy.  
