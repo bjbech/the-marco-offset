@@ -24,9 +24,38 @@ async function loadData() {
         
         initializeTable();
         updateCurrency();
+
+        // Deliberately not awaited: the committed rates are already on screen,
+        // and the page must not wait on a third party to become usable.
+        refreshLiveRates();
     } catch (error) {
         console.error('Error loading data:', error);
         showDataError();
+    }
+}
+
+// The committed rates are refreshed on every deploy, but a deploy can sit for
+// weeks between pushes, so the page asks Frankfurter for today's fixing too.
+// Every failure path here is a no-op: offline, blocked, rate-limited or slow
+// all leave data/conversionRate.json standing, which is never more than about
+// a percent off.
+const LIVE_RATES_TIMEOUT_MS = 5000;
+
+async function refreshLiveRates() {
+    try {
+        const response = await fetch(MarcoOffset.ratesUrl(deviceData), {
+            signal: AbortSignal.timeout(LIVE_RATES_TIMEOUT_MS)
+        });
+        if (!response.ok) return;
+
+        const live = MarcoOffset.ratesByCountry(await response.json(), deviceData);
+        if (live === null) return;
+
+        conversionRates = live;
+        // Only redraws if the visitor has already calculated once.
+        refreshResult();
+    } catch (error) {
+        // Nothing to do, and nothing worth saying: the committed rates stand.
     }
 }
 
