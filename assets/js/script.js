@@ -190,15 +190,22 @@ function calculateOffset() {
     
     // Update display
     document.getElementById('offsetLevelLabel').textContent = ` (Level ${currentLevel})`;
-    document.getElementById('offsetAmountUSD').textContent = formatter.format(result.offsetUSD);
-    
-    // Show local currency in parentheses if not USA
+
     const localCurrencyDisplay = document.getElementById('localCurrencyDisplay');
-    if (currentCountry !== 'USA') {
-        localCurrencyDisplay.textContent = `(${countryData.symbol}${formatter.format(result.offsetLocal)})`;
-        localCurrencyDisplay.style.fontWeight = 'normal';
+    localCurrencyDisplay.style.fontWeight = 'normal';
+
+    // No usable rate means no honest USD figure. Showing the local amount and
+    // saying why beats printing it with a dollar sign in front of it.
+    if (result.offsetUSD === null) {
+        document.getElementById('offsetAmountUSD').textContent = '—';
+        localCurrencyDisplay.textContent =
+            `(${countryData.symbol}${formatter.format(result.offsetLocal)} — no conversion rate available)`;
     } else {
-        localCurrencyDisplay.textContent = '';
+        document.getElementById('offsetAmountUSD').textContent = formatter.format(result.offsetUSD);
+        // The local figure is only worth repeating when it differs from the USD one.
+        localCurrencyDisplay.textContent = currentCountry === 'USA'
+            ? ''
+            : `(${countryData.symbol}${formatter.format(result.offsetLocal)})`;
     }
     
     // Update donation link with USD value

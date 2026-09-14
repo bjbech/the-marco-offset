@@ -76,11 +76,12 @@
         return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
     }
 
-    // A missing or nonsensical rate leaves the figure in local currency rather
-    // than zeroing the donation, which is what amount() would do here.
-    function rate(value) {
+    // A missing or nonsensical rate must not pass as 1: that reports a local
+    // amount as though it were USD, overstating a Canadian donation by about
+    // 39%. null makes the page say so instead of showing a wrong number.
+    function usableRate(value) {
         const parsed = parseFloat(value);
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }
 
     function sumBasePrices(devices, quantities) {
@@ -113,11 +114,13 @@
         const aiCost = aiCostForLevel(input.level, input.monthlyAiCost, input.annualAiCost);
         const offsetLocal = baseOffset + aiCost;
 
+        const conversionRate = usableRate(input.conversionRate);
+
         return {
             baseOffset: baseOffset,
             aiCost: aiCost,
             offsetLocal: offsetLocal,
-            offsetUSD: offsetLocal * rate(input.conversionRate)
+            offsetUSD: conversionRate === null ? null : offsetLocal * conversionRate
         };
     }
 
