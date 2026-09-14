@@ -14,8 +14,8 @@ it in step 4.
 ### 1. Check the currency is one the ECB publishes
 
 Rates come from Frankfurter pinned to the European Central Bank, which publishes
-47 codes — about 35 once the pre-euro legacy ones are set aside, and well short
-of Frankfurter's full 205. Check before doing any other work:
+47 codes — about 30 in practice once the codes it no longer publishes are set
+aside, and well short of Frankfurter's full 205. Check before doing any other work:
 
 ```bash
 curl "https://api.frankfurter.dev/v2/rates?base=USD&quotes=AUD&providers=ECB"
@@ -37,7 +37,9 @@ curl -s "https://api.frankfurter.dev/v2/providers" \
 
 Some codes in that list are legacy currencies that no longer circulate (`GRD`,
 `SIT`, `SKK`, `CYP`, `MTL`, `EEK`, `LTL`, `LVL`, `HRK`, `ROL`, `TRL`) and are not
-usable for a present-day country.
+usable for a present-day country. Others the ECB has simply stopped publishing —
+`ARS`, `BGN`, `DZD`, `MAD`, `RUB` and `TWD` among them — also return nothing, so
+treat the step 1 check as the authority rather than this list.
 
 ### 2. Add the country to `data/devices.json`
 

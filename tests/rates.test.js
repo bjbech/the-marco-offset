@@ -51,7 +51,7 @@ test('ratesByCountry inverts USD quotes into local-to-USD rates', () => {
 // The base currency is worth 1 of itself. Frankfurter is asked for a USD quote
 // and returns 1.0, but the value must not depend on that.
 test('ratesByCountry reports the base currency as exactly 1', () => {
-    const withUsd = payload().concat({ date: '2026-09-14', base: 'USD', quote: 'USD', rate: 1.0 });
+    const withUsd = payload().concat({ date: '2026-09-14', base: 'USD', quote: 'USD', rate: 0.999 });
 
     assert.equal(ratesByCountry(payload(), DEVICES).USA, 1);
     assert.equal(ratesByCountry(withUsd, DEVICES).USA, 1);
@@ -82,6 +82,13 @@ test('ratesByCountry returns null for a payload that is empty or not an array', 
     for (const bad of [[], null, undefined, {}, 'nope']) {
         assert.equal(ratesByCountry(bad, DEVICES), null, `${JSON.stringify(bad)} should be refused`);
     }
+});
+
+// An empty devices object produces no country entries at all; that must come
+// back as null, not {}, or the browser path would replace good committed
+// rates with an empty object.
+test('ratesByCountry returns null when devices has no countries to price', () => {
+    assert.equal(ratesByCountry(payload(), {}), null);
 });
 
 test('ratesByCountry refuses a payload quoted against a different base', () => {

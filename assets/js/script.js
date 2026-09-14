@@ -42,20 +42,25 @@ async function loadData() {
 const LIVE_RATES_TIMEOUT_MS = 5000;
 
 async function refreshLiveRates() {
+    let live = null;
+
     try {
         const response = await fetch(MarcoOffset.ratesUrl(deviceData), {
-            signal: AbortSignal.timeout(LIVE_RATES_TIMEOUT_MS)
+            signal: AbortSignal.timeout(LIVE_RATES_TIMEOUT_MS),
+            referrerPolicy: 'no-referrer'
         });
         if (!response.ok) return;
 
-        const live = MarcoOffset.ratesByCountry(await response.json(), deviceData);
-        if (live === null) return;
+        live = MarcoOffset.ratesByCountry(await response.json(), deviceData);
+    } catch (error) {
+        // Nothing to do, and nothing worth saying: the committed rates stand.
+        console.debug('Live rates unavailable; keeping the committed rates.', error);
+    }
 
+    if (live !== null) {
         conversionRates = live;
         // Only redraws if the visitor has already calculated once.
         refreshResult();
-    } catch (error) {
-        // Nothing to do, and nothing worth saying: the committed rates stand.
     }
 }
 
@@ -230,7 +235,7 @@ function calculateOffset() {
         localCurrencyDisplay.textContent =
             `(${countryData.symbol}${formatter.format(result.offsetLocal)} — no conversion rate available)`;
     } else {
-        document.getElementById('offsetAmountUSD').textContent = formatter.format(result.offsetUSD);
+        document.getElementById('offsetAmountUSD').textContent = '$' + formatter.format(result.offsetUSD);
         // The local figure is only worth repeating when it differs from the USD one.
         localCurrencyDisplay.textContent = currentCountry === 'USA'
             ? ''

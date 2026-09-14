@@ -160,9 +160,7 @@
     function ratesByCountry(payload, devices) {
         if (!Array.isArray(payload) || payload.length === 0) return null;
 
-        // The base is worth 1 of itself whether or not the response says so.
         const quoted = {};
-        quoted[RATES_BASE] = 1;
 
         for (const entry of payload) {
             if (!entry || entry.base !== RATES_BASE) return null;
@@ -170,6 +168,9 @@
             if (!Number.isFinite(entry.rate) || entry.rate <= 0) return null;
             quoted[entry.quote] = entry.rate;
         }
+
+        // The base is worth 1 of itself whether or not the response says so.
+        quoted[RATES_BASE] = 1;
 
         const rates = {};
 
@@ -181,6 +182,8 @@
             // unit is worth about 0.0000625 USD.
             rates[country] = Number((1 / quote).toPrecision(8));
         }
+
+        if (Object.keys(rates).length === 0) return null;
 
         return rates;
     }
