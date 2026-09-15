@@ -44,8 +44,8 @@ test('every country declares a currency and a symbol', () => {
 
 const conversionRates = require('../data/conversionRate.json');
 
-// computeOffset() falls back to a rate of 1 when one is missing, which would
-// silently report a local amount as though it were USD.
+// A missing rate now shows a dash instead of a number, so the committed file
+// must cover every country or that country's visitors get no USD figure.
 test('every country has a conversion rate', () => {
     for (const country of countries) {
         assert.ok(

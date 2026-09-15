@@ -36,7 +36,7 @@ On level 3 the annual figure auto-fills as monthly × 12, and you can type over 
 
 ## Development
 
-The site is static: no build step, no dependencies, no `package.json`. Open `index.html` or serve the folder with `python3 -m http.server`.
+The site is static: no dependencies, no `package.json`, no bundler. Open `index.html` or serve the folder with `python3 -m http.server`. The only build step is a rate refresh, described below.
 
 The offset arithmetic lives in `assets/js/calculator.js` as pure functions with no DOM access, so it is testable directly. `assets/js/script.js` handles the page wiring and calls into it.
 
@@ -45,6 +45,26 @@ node --test
 ```
 
 Netlify runs that same command on every deploy (see `netlify.toml`), so a failing test blocks the deploy.
+
+### Conversion rates
+
+Rates come from [Frankfurter](https://frankfurter.dev), pinned to the ECB's daily
+reference fixing, and reach the page two ways:
+
+- `scripts/fetch-rates.js` rewrites `data/conversionRate.json` before each
+  Netlify build. A Frankfurter outage is not a build failure — the script warns
+  and leaves the committed rates, which `node --test` then validates.
+- The page fetches today's fixing directly and upgrades the rate once it lands.
+  This never blocks the first render, and any failure leaves the committed rates
+  in place.
+
+There is no scheduled refresh build: Netlify's free tier allows about twenty
+builds a month, and a week-old rate is only ~0.5% off. Run
+`node scripts/fetch-rates.js` to refresh the file by hand.
+
+Both paths share `ratesUrl()` and `ratesByCountry()` in `assets/js/calculator.js`,
+and derive the quote currencies from `data/devices.json`. Adding a country is
+described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Enhancements to Add
 
@@ -57,6 +77,9 @@ Netlify runs that same command on every deploy (see `netlify.toml`), so a failin
 1. Fork the repository.
 2. Create a new branch.
 3. Make your changes and submit a pull request.
+
+Adding a country or currency has a specific order to it — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Change Log
 2026-09-08: Added the three offset levels from ATP 707 (base, plus monthly AI cost, plus annual AI cost). Extracted the offset math into `assets/js/calculator.js` and covered it with `node --test`.  

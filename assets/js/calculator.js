@@ -76,11 +76,12 @@
         return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
     }
 
-    // A missing or nonsensical rate leaves the figure in local currency rather
-    // than zeroing the donation, which is what amount() would do here.
-    function rate(value) {
+    // A missing or nonsensical rate must not pass as 1: that reports a local
+    // amount as though it were USD, overstating a Canadian donation by about
+    // 39%. null makes the page say so instead of showing a wrong number.
+    function usableRate(value) {
         const parsed = parseFloat(value);
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }
 
     function sumBasePrices(devices, quantities) {
@@ -113,11 +114,13 @@
         const aiCost = aiCostForLevel(input.level, input.monthlyAiCost, input.annualAiCost);
         const offsetLocal = baseOffset + aiCost;
 
+        const conversionRate = usableRate(input.conversionRate);
+
         return {
             baseOffset: baseOffset,
             aiCost: aiCost,
             offsetLocal: offsetLocal,
-            offsetUSD: offsetLocal * rate(input.conversionRate)
+            offsetUSD: conversionRate === null ? null : offsetLocal * conversionRate
         };
     }
 
@@ -129,6 +132,62 @@
         return donation > 0 ? baseUrl + '?amount=' + donation.toFixed(2) : baseUrl;
     }
 
+    // Frankfurter quotes the base against each target ("1 USD = 1.3887 CAD");
+    // conversionRate.json stores the inverse, local -> USD, keyed by the
+    // country names in devices.json.
+    const RATES_ENDPOINT = 'https://api.frankfurter.dev/v2/rates';
+    const RATES_BASE = 'USD';
+    const RATES_PROVIDER = 'ECB';
+
+    // Deriving the quote currencies from the device data means a new country
+    // only ever has to be added to devices.json.
+    function ratesUrl(devices) {
+        const quotes = [];
+
+        Object.keys(devices).forEach(function (country) {
+            const code = devices[country].currency;
+            if (code && quotes.indexOf(code) === -1) quotes.push(code);
+        });
+
+        return RATES_ENDPOINT +
+            '?base=' + RATES_BASE +
+            '&quotes=' + quotes.join(',') +
+            '&providers=' + RATES_PROVIDER;
+    }
+
+    // Returns null rather than a partial object: one missing currency would
+    // reach the offset arithmetic as undefined and blank out that country.
+    function ratesByCountry(payload, devices) {
+        if (!Array.isArray(payload) || payload.length === 0) return null;
+
+        const quoted = {};
+
+        for (const entry of payload) {
+            if (!entry || entry.base !== RATES_BASE) return null;
+            if (typeof entry.quote !== 'string') return null;
+            if (!Number.isFinite(entry.rate) || entry.rate <= 0) return null;
+            quoted[entry.quote] = entry.rate;
+        }
+
+        // The base is worth 1 of itself whether or not the response says so.
+        quoted[RATES_BASE] = 1;
+
+        const rates = {};
+
+        for (const country of Object.keys(devices)) {
+            const quote = quoted[devices[country].currency];
+            if (!Number.isFinite(quote) || quote <= 0) return null;
+            // Significant figures, not decimal places: six decimals is exact
+            // enough near 1.0 but loses 0.8% on a currency like IDR, where a
+            // unit is worth about 0.0000625 USD.
+            rates[country] = Number((1 / quote).toPrecision(8));
+        }
+
+        if (Object.keys(rates).length === 0) return null;
+
+        return rates;
+    }
+
     return {
         MONTHS_PER_YEAR: MONTHS_PER_YEAR,
         donationUrl: donationUrl,
@@ -136,6 +195,8 @@
         amount: amount,
         sumBasePrices: sumBasePrices,
         annualFromMonthly: annualFromMonthly,
-        computeOffset: computeOffset
+        computeOffset: computeOffset,
+        ratesUrl: ratesUrl,
+        ratesByCountry: ratesByCountry
     };
 });

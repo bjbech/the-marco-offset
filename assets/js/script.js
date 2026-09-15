@@ -24,9 +24,43 @@ async function loadData() {
         
         initializeTable();
         updateCurrency();
+
+        // Deliberately not awaited: the committed rates are already on screen,
+        // and the page must not wait on a third party to become usable.
+        refreshLiveRates();
     } catch (error) {
         console.error('Error loading data:', error);
         showDataError();
+    }
+}
+
+// The committed rates are refreshed on every deploy, but a deploy can sit for
+// weeks between pushes, so the page asks Frankfurter for today's fixing too.
+// Every failure path here is a no-op: offline, blocked, rate-limited or slow
+// all leave data/conversionRate.json standing, which is never more than about
+// a percent off.
+const LIVE_RATES_TIMEOUT_MS = 5000;
+
+async function refreshLiveRates() {
+    let live = null;
+
+    try {
+        const response = await fetch(MarcoOffset.ratesUrl(deviceData), {
+            signal: AbortSignal.timeout(LIVE_RATES_TIMEOUT_MS),
+            referrerPolicy: 'no-referrer'
+        });
+        if (!response.ok) return;
+
+        live = MarcoOffset.ratesByCountry(await response.json(), deviceData);
+    } catch (error) {
+        // Nothing to do, and nothing worth saying: the committed rates stand.
+        console.debug('Live rates unavailable; keeping the committed rates.', error);
+    }
+
+    if (live !== null) {
+        conversionRates = live;
+        // Only redraws if the visitor has already calculated once.
+        refreshResult();
     }
 }
 
@@ -190,15 +224,22 @@ function calculateOffset() {
     
     // Update display
     document.getElementById('offsetLevelLabel').textContent = ` (Level ${currentLevel})`;
-    document.getElementById('offsetAmountUSD').textContent = formatter.format(result.offsetUSD);
-    
-    // Show local currency in parentheses if not USA
+
     const localCurrencyDisplay = document.getElementById('localCurrencyDisplay');
-    if (currentCountry !== 'USA') {
-        localCurrencyDisplay.textContent = `(${countryData.symbol}${formatter.format(result.offsetLocal)})`;
-        localCurrencyDisplay.style.fontWeight = 'normal';
+    localCurrencyDisplay.style.fontWeight = 'normal';
+
+    // No usable rate means no honest USD figure. Showing the local amount and
+    // saying why beats printing it with a dollar sign in front of it.
+    if (result.offsetUSD === null) {
+        document.getElementById('offsetAmountUSD').textContent = '—';
+        localCurrencyDisplay.textContent =
+            `(${countryData.symbol}${formatter.format(result.offsetLocal)} — no conversion rate available)`;
     } else {
-        localCurrencyDisplay.textContent = '';
+        document.getElementById('offsetAmountUSD').textContent = '$' + formatter.format(result.offsetUSD);
+        // The local figure is only worth repeating when it differs from the USD one.
+        localCurrencyDisplay.textContent = currentCountry === 'USA'
+            ? ''
+            : `(${countryData.symbol}${formatter.format(result.offsetLocal)})`;
     }
     
     // Update donation link with USD value
