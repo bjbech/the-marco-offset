@@ -1,8 +1,13 @@
 # Build settings live here rather than in the Netlify dashboard so a broken
-# offset formula fails the build instead of shipping. `node --test` needs no
-# install: the runner is built into Node.
+# offset formula fails the build instead of shipping. Neither command needs an
+# install: the test runner is built into Node, and the fetch script has no
+# dependencies.
+#
+# fetch-rates.js refreshes data/conversionRate.json and always exits 0 — a
+# Frankfurter outage leaves the committed rates in place rather than blocking a
+# deploy. `node --test` then fails the build if the file it wrote is unusable.
 [build]
-  command = "node --test"
+  command = "node scripts/fetch-rates.js && node --test"
   publish = "."
 
 [build.environment]

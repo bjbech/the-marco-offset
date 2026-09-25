@@ -147,3 +147,25 @@ test('donationUrl matches what computeOffset produces end to end', () => {
     const result = computeOffset(inputs({ level: 2, monthlyAiCost: 20 }));
     assert.equal(donationUrl(DONATE_URL, result.offsetUSD), `${DONATE_URL}?amount=221.00`);
 });
+
+// Returning 1 here would report a local amount as though it were USD: a
+// Canadian would be told to donate C$500 as "$500", about 39% too much.
+test('an unusable rate yields no USD figure rather than a wrong one', () => {
+    for (const bad of [undefined, null, '', 'abc', 0, -1.36, NaN]) {
+        const result = computeOffset(inputs({ conversionRate: bad }));
+
+        assert.equal(result.offsetUSD, null, `rate ${JSON.stringify(bad)} should not convert`);
+        // The local figure is still correct, and the page still shows it.
+        assert.equal(result.offsetLocal, 201);
+    }
+});
+
+test('a rate of 1 still converts, because that is the USA rate', () => {
+    assert.equal(computeOffset(inputs({ conversionRate: 1 })).offsetUSD, 201);
+});
+
+test('an unconverted offset leaves the donate link without a prefilled amount', () => {
+    const result = computeOffset(inputs({ conversionRate: undefined }));
+
+    assert.equal(donationUrl(DONATE_URL, result.offsetUSD), DONATE_URL);
+});
